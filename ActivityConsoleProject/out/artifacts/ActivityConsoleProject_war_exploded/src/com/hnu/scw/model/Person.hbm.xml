@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+        "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<hibernate-mapping>
+    <!--
+        class元素代表持久化类
+             name属性为类的全名
+             table 表名  默认值：类名
+             catalog 数据库的名字
+     -->
+    <class name="com.hnu.scw.model.Person">
+        <id name="id" length="5">
+            <generator class="increment"></generator>
+        </id>
+        <property name="name" length="20"></property>
+        <property name="sex" length="20"></property>
+    </class>
+</hibernate-mapping>

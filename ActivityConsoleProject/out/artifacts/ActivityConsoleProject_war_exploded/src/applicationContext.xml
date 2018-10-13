@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns="http://www.springframework.org/schema/beans"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
+							http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.2.xsd
+							http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.2.xsd
+							http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.2.xsd ">
+
+    <!-- 读取db.properties文件 -->
+    <context:property-placeholder location="classpath:dbapplication.properties" />
+    <!--配置bean，通过xml的形式，这个实际开发中不会这样，因为这样的话，比较实现setXXX()方法才可以注入，一般都是扫描-->
+    <!--<bean id="personDao" class="com.hnu.scw.dao.impl.PersonDaoImp">
+        <property name="sessionFactory">
+            <ref bean="sessionFactory"/>
+        </property>
+        &lt;!&ndash;
+        上面的这个等价于下面的配置，看个人爱好吧
+        <property name="sessionFactory" ref="sessionFactory"> </property>
+        &ndash;&gt;
+    </bean>
+    <bean id="personService" class="com.hnu.scw.service.imp.PersonServiceImp1">
+        <property name="personDao">
+            <ref bean="personDao"/>
+        </property>
+    </bean>-->
+    <!--配置bean扫描-->
+    <context:component-scan base-package="com.hnu.scw" ></context:component-scan>
+    <!--配置sessionFactory(方法一)-->
+    <!--<bean id="sessionFactory" class="org.springframework.orm.hibernate5.LocalSessionFactoryBean">
+        <property name="configLocation">
+            <value>classpath:hibernate.cfg.xml</value>
+        </property>
+    </bean>-->
+    <!-- 配置数据库配置,配置c3p0连接池 -->
+    <bean name="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+        <property name="jdbcUrl" value="${jdbc.jdbcUrl}" ></property>
+        <property name="driverClass" value="${jdbc.driverClass}" ></property>
+        <property name="user" value="${jdbc.user}" ></property>
+        <property name="password" value="${jdbc.password}" ></property>
+    </bean>
+    <!--配置sessionFactory(方法二)，一般都是采取这种方式，比较简单-->
+    <bean id="sessionFactory" class="org.springframework.orm.hibernate5.LocalSessionFactoryBean">
+        <!--引入数据库配置信息dataSource-->
+        <property name="dataSource" >
+            <ref bean="dataSource"/>
+        </property>
+        <property name="hibernateProperties">
+            <props>
+                <!--三个可选的hibernate配置内容-->
+                <prop key="hibernate.show_sql" >true</prop>
+                <prop key="hibernate.format_sql" >true</prop>
+                <prop key="hibernate.hbm2ddl.auto" >update</prop>
+            </props>
+        </property>
+        <!--扫描对应对应包下的实体类-->
+        <property name="packagesToScan">
+            <list>
+                <value>com.hnu.scw.model</value>
+            </list>
+        </property>
+        <!-- 配置实体扫描,引入orm元数据,指定orm元数据所在的包路径,spring会自动读取包中的所有配置 -->
+        <!--<property name="mappingDirectoryLocations" value="classpath:com/hnu/scw/model" ></property>-->
+    </bean>
+
+    <!--配置hibernate事务-->
+    <bean id="transactionManager" class="org.springframework.orm.hibernate5.HibernateTransactionManager">
+        <property name="sessionFactory">
+            <ref bean="sessionFactory" />
+        </property>
+    </bean>
+
+    <!-- 开启注解事务,一般使用xml进行配置会比较好些，也就是下面的方法-->
+    <!--<tx:annotation-driven transaction-manager="transactionManager" />-->
+
+    <!--配置切面通知-->
+    <tx:advice id="tx" transaction-manager="transactionManager">
+        <tx:attributes>
+            <!--根据service中的方法名来自定义配置信息，一般的都默认配置为如下信息
+            isolation="REPEATABLE_READ" propagation="REQUIRED" read-only="false"
+            -->
+            <tx:method name="save*"  propagation="REQUIRED" read-only="false"/>
+            <tx:method name="insert*" propagation="REQUIRED" read-only="false"/>
+            <tx:method name="update*" propagation="REQUIRED" read-only="false"/>
+            <tx:method name="delete*" propagation="REQUIRED" read-only="false"/>
+        </tx:attributes>
+    </tx:advice>
+    <!--织入切面管理service中事务-->
+    <aop:config >
+        <aop:pointcut id="perform" expression="execution(* com.hnu.scw.service..*.*(..))"/>
+        <aop:advisor advice-ref="tx" pointcut-ref="perform"/>
+    </aop:config>
+
+
+
+</beans>
